@@ -23,6 +23,21 @@ Join the Spring Boot community to connect with other developers and get support:
 - [Stack Overflow](https://stackoverflow.com/questions/tagged/spring-boot)
 - [GitHub Issues](https://github.com/spring-projects/spring-boot/issues)
 
+## Base de datos
+
+Hemos utilizado una base de datos H2 en memoria para facilitar el desarrollo y las pruebas. Puedes cambiar la configuración de la base de datos en el archivo `application.properties` o `application.yml` según tus necesidades.
+
+Para acceder a la consola de H2 lo hacemos disponible en la siguiente URL cuando la aplicación está en ejecución:
+
+http://localhost:8080/h2-console
+
+Configuración:
+
+-JDBC URL: jdbc:h2:mem:atmdb
+-Username: sa
+-Password: (deja en blanco)
+
+
 ## License
 
 This Spring Boot template is provided under the [Apache 2.0 license](https://github.com/spring-projects/spring-boot/blob/main/LICENSE.txt).
