@@ -8,6 +8,7 @@ import lombok.NonNull;
 import org.springframework.data.domain.AbstractAggregateRoot;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -19,10 +20,13 @@ public class Account extends AbstractAggregateRoot {
 
 	@NonNull
 	private final Bank bank;
+
 	@NonNull
 	private final List<Card> cards;
+
 	@NonNull
-	private final List<Movement> movements;
+	private List<Movement> movements;
+
 	@NonNull
 	private TotalCredit totalCredit;
 
@@ -41,18 +45,22 @@ public class Account extends AbstractAggregateRoot {
 
 		final var finalAmountToWithdraw = this.getFinalAmountToWithdrawDependingOnBank(amountToWithdraw, originBank);
 
+		if (!card.isActive().value())
+			throw new IllegalArgumentException("Card is not active");
 		if (card.isLimitExceeded(finalAmountToWithdraw))
 			throw new IllegalArgumentException("Amount to withdraw exceeds card limit");
 		if (card.isDebitCard() && this.isAmountToWithdrawBiggerThanTotalCredit(finalAmountToWithdraw))
 			throw new IllegalArgumentException("Amount to withdraw exceeds total credit");
-		if (!card.isActive().value())
-			throw new IllegalArgumentException("Card is not active");
 
 		this.totalCredit = new TotalCredit(this.totalCredit.value().subtract(finalAmountToWithdraw));
-		this.movements.add(Movement.ofWithdrawal(finalAmountToWithdraw));
+		this.movements = this.addMovement(Movement.ofWithdrawal(finalAmountToWithdraw));
 		return this;
 	}
-
+	private List<Movement> addMovement(Movement movement) {
+		final List<Movement> updatedMovements = new ArrayList<>(this.movements);
+		updatedMovements.add(movement);
+		return updatedMovements;
+	}
 	private BigDecimal getFinalAmountToWithdrawDependingOnBank(BigDecimal amountToWithdraw, String originBank) {
 		return this.getBank().isSameBank(originBank)
 				? amountToWithdraw
