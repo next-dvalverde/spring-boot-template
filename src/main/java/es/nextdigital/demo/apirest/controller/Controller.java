@@ -46,4 +46,9 @@ public class Controller {
 		final var response = new MoneyWithdrawalResponseDTO(result.getIban().value());
 		return ResponseEntity.status(HttpStatus.CREATED).body(response);
 	}
+
+	@ExceptionHandler(IllegalArgumentException.class)
+	public ResponseEntity<String> handleIllegalArgumentException(IllegalArgumentException ex) {
+		return ResponseEntity.badRequest().body(ex.getMessage());
+	}
 }
