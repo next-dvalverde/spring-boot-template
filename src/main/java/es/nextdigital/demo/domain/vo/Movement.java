@@ -17,6 +17,11 @@ public record Movement(@NonNull Id id, @NonNull MovementType movementType, @NonN
 				new Movement.Quantity(amountToDeposit));
 	}
 
+	public static Movement ofTransferOut(BigDecimal amountToTransfer) {
+		return new Movement(new Movement.Id(UUID.randomUUID()), MovementType.TRANSFER_OUT,
+				new Movement.Quantity(amountToTransfer));
+	}
+
 	public record Id(@NonNull UUID value) {
 
 	}

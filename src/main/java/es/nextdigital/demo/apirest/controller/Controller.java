@@ -1,6 +1,7 @@
 package es.nextdigital.demo.apirest.controller;
 
 import es.nextdigital.demo.apirest.dto.*;
+import es.nextdigital.demo.application.AccountTransferCommand;
 import es.nextdigital.demo.application.GetAccountMovementQuery;
 import es.nextdigital.demo.application.MoneyDepositCommand;
 import es.nextdigital.demo.application.MoneyWithdrawalCommand;
@@ -53,6 +54,17 @@ public class Controller {
 		final var result = (Account) this.commandGateway.sendAndWait(new MoneyDepositCommand(UUID.fromString(cardId),
 				moneyDepositRequestDTO.quantityToDeposit(), moneyDepositRequestDTO.bank()));
 		final var response = new MoneyDepositResponseDTO(result.getIban().value());
+		return ResponseEntity.status(HttpStatus.CREATED).body(response);
+	}
+
+	@RequestMapping(method = RequestMethod.POST, value = "/account/{accountId}/transfers", produces = {
+			"application/json"}, consumes = {"application/json"})
+	ResponseEntity<AccountTransferResponseDTO> moneyDepositPost(@PathVariable("accountId") String accountId,
+			@RequestBody AccountTransferRequestDTO accountTransferRequestDTO) {
+		final var result = (Account) this.commandGateway
+				.sendAndWait(new AccountTransferCommand(accountId, accountTransferRequestDTO.quantityToTransfer(),
+						accountTransferRequestDTO.destinationIban(), accountTransferRequestDTO.destinationBank()));
+		final var response = new AccountTransferResponseDTO(result.getIban().value());
 		return ResponseEntity.status(HttpStatus.CREATED).body(response);
 	}
 

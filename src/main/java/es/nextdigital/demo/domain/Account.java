@@ -49,7 +49,7 @@ public class Account extends AbstractAggregateRoot {
 			throw new IllegalArgumentException("Card is not active");
 		if (card.isLimitExceeded(finalAmountToWithdraw))
 			throw new IllegalArgumentException("Amount to withdraw exceeds card limit");
-		if (card.isDebitCard() && this.isAmountToWithdrawBiggerThanTotalCredit(finalAmountToWithdraw))
+		if (card.isDebitCard() && this.isAmountToSubstractBiggerThanTotalCredit(finalAmountToWithdraw))
 			throw new IllegalArgumentException("Amount to withdraw exceeds total credit");
 
 		this.totalCredit = new TotalCredit(this.totalCredit.value().subtract(finalAmountToWithdraw));
@@ -69,7 +69,7 @@ public class Account extends AbstractAggregateRoot {
 				: amountToWithdraw.multiply(new BigDecimal("1.02"));
 	}
 
-	private boolean isAmountToWithdrawBiggerThanTotalCredit(BigDecimal amountToWithdraw) {
+	private boolean isAmountToSubstractBiggerThanTotalCredit(BigDecimal amountToWithdraw) {
 		return this.getTotalCredit().value().compareTo(amountToWithdraw) < 0;
 	}
 
@@ -92,7 +92,32 @@ public class Account extends AbstractAggregateRoot {
 		return account.getCards().stream().filter(card -> card.id().equals(cardId)).findFirst();
 	}
 
+	public Account transfer(Iban iban, Bank destinationBank, BigDecimal amountToTransfer) {
+		if (!iban.isFormatValidForSpain())
+			throw new IllegalArgumentException("Invalid destinationBank format");
+		final var finalAmountToTransfer = this.getFinalAmountToTransferDependingOnBank(destinationBank,
+				amountToTransfer);
+		if (this.isAmountToSubstractBiggerThanTotalCredit(finalAmountToTransfer))
+			throw new IllegalArgumentException("Amount to transfer exceeds total credit");
+		this.totalCredit = new TotalCredit(this.totalCredit.value().subtract(finalAmountToTransfer));
+		this.movements = this.addMovement(Movement.ofTransferOut(finalAmountToTransfer));
+		return this;
+	}
+
+	private BigDecimal getFinalAmountToTransferDependingOnBank(Bank destinationBank, BigDecimal amountToTransfer) {
+		return this.bank.isSameBank(destinationBank.value)
+				? amountToTransfer
+				: amountToTransfer.add(amountToTransfer.multiply(new BigDecimal("0.02")));
+	}
+
 	public record Iban(@NonNull String value) {
+		public boolean isFormatValidForSpain() {
+			if (this.value == null)
+				return false;
+			final String trimmed = this.value.replaceAll("\\s+", "").toUpperCase();
+			return trimmed.matches("^ES\\d{22}$");
+
+		}
 	}
 
 	public record Bank(@NonNull String value) {
