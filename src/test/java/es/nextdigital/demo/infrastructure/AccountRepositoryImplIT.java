@@ -46,4 +46,21 @@ class AccountRepositoryImplIT {
 		assertThat(result.get()).isEqualTo(account);
 	}
 
+	@Test
+	void should_find_account_from_card() {
+		final var movement = new Movement(new Movement.Id(UUID.randomUUID()), MovementType.DEPOSIT,
+				new Movement.Quantity(BigDecimal.TEN));
+		final var card = new Card(new Card.Id(UUID.randomUUID()), CardType.CREDIT, new Card.Limit(BigDecimal.TEN),
+				new Card.IsActive(true));
+		final var ibanValue = "IBAN123456";
+		final var account = new Account(new Account.Iban(ibanValue), new Account.Bank("MyBank"),
+				new Account.TotalCredit(BigDecimal.TEN), List.of(movement), List.of(card));
+
+		this.accountRepository.save(account);
+
+		final var result = this.accountRepository.findByCardId(card.id());
+		assertThat(result).isPresent();
+		assertThat(result.get()).isEqualTo(account);
+	}
+
 }

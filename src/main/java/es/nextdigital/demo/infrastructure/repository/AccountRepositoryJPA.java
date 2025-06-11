@@ -11,7 +11,8 @@ import java.util.UUID;
 
 @Repository
 public interface AccountRepositoryJPA extends JpaRepository<AccountEntity, String> {
-	@Query("SELECT c.account FROM Card c WHERE c.id = :cardId")
+
+	@Query("SELECT c.account FROM CardEntity c WHERE c.id = :cardId")
 	Optional<AccountEntity> findByCardId(@Param("cardId") UUID cardId);
 
 }
