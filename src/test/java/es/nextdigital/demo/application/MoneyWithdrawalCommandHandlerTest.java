@@ -127,8 +127,8 @@ class MoneyWithdrawalCommandHandlerTest {
 
 		assertThat(result.getMovements()).hasSize(1);
 		assertThat(result.getMovements().get(0).movementType()).isEqualTo(MovementType.WITHDRAWAL);
-		assertThat(result.getMovements().get(0).quantity().value()).isEqualTo(command.amountToWithdraw());
-		assertThat(result.getTotalCredit().value()).isEqualTo(BigDecimal.valueOf(-90));
+		assertThat(result.getMovements().get(0).quantity().value().compareTo(command.amountToWithdraw())).isZero();
+		assertThat(result.getTotalCredit().value().compareTo(BigDecimal.valueOf(-90))).isZero();
 	}
 
 	@Test
@@ -146,7 +146,26 @@ class MoneyWithdrawalCommandHandlerTest {
 
 		assertThat(result.getMovements()).hasSize(1);
 		assertThat(result.getMovements().get(0).movementType()).isEqualTo(MovementType.WITHDRAWAL);
-		assertThat(result.getMovements().get(0).quantity().value()).isEqualTo(command.amountToWithdraw());
-		assertThat(result.getTotalCredit().value()).isEqualTo(BigDecimal.valueOf(100));
+		assertThat(result.getMovements().get(0).quantity().value().compareTo(command.amountToWithdraw())).isZero();
+		assertThat(result.getTotalCredit().value().compareTo(BigDecimal.valueOf(100))).isZero();
+	}
+
+	@Test
+	void should_apply_rates() {
+		final var card = new Card(new Card.Id(UUID.randomUUID()), CardType.DEBIT,
+				new Card.Limit(BigDecimal.valueOf(1000)), new Card.IsActive(true));
+		final var account = new Account(new Account.Iban("ES1234567890"), new Account.Bank("NOTMyBank"),
+				new Account.TotalCredit(BigDecimal.valueOf(200)), List.of(), List.of(card));
+		final var cardId = card.id();
+		final var command = new MoneyWithdrawalCommand(cardId.value(), BigDecimal.valueOf(100), "MyBank");
+
+		doReturn(Optional.of(account)).when(this.accountRepository).findByCardId(cardId);
+
+		final var result = this.sut.handle(command);
+
+		assertThat(result.getMovements()).hasSize(1);
+		assertThat(result.getMovements().get(0).movementType()).isEqualTo(MovementType.WITHDRAWAL);
+		assertThat(result.getMovements().get(0).quantity().value().compareTo(BigDecimal.valueOf(102.0))).isZero();
+		assertThat(result.getTotalCredit().value().compareTo((BigDecimal.valueOf(98)))).isZero();
 	}
 }
