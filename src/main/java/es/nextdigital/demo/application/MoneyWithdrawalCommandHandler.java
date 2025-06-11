@@ -8,8 +8,6 @@ import org.axonframework.commandhandling.CommandHandler;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.NoSuchElementException;
-
 @RequiredArgsConstructor
 @Component
 public class MoneyWithdrawalCommandHandler {
@@ -21,7 +19,7 @@ public class MoneyWithdrawalCommandHandler {
 		final var cardId = new Card.Id(command.cardId());
 		final var updatedAccount = this.accountRepository.findByCardId(cardId)
 				.map(acc -> acc.withdraw(cardId, command.amountToWithdraw(), command.originBank()))
-				.orElseThrow(() -> new NoSuchElementException("No account found for card " + command.cardId()));
+				.orElseThrow(() -> new IllegalArgumentException("No account found for card " + command.cardId()));
 
 		this.accountRepository.save(updatedAccount);
 
