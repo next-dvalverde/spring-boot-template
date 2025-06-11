@@ -1,0 +1,13 @@
+version: '2'
+
+services:
+  db:
+    image: postgres
+    ports:
+      - 5434:5432
+    environment:
+      - POSTGRES_USER=devuser
+      - POSTGRES_PASSWORD=devuser
+      - POSTGRES_DB=bank
+    restart: always
+    container_name: db
