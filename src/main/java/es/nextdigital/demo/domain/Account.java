@@ -56,11 +56,13 @@ public class Account extends AbstractAggregateRoot {
 		this.movements = this.addMovement(Movement.ofWithdrawal(finalAmountToWithdraw));
 		return this;
 	}
+
 	private List<Movement> addMovement(Movement movement) {
 		final List<Movement> updatedMovements = new ArrayList<>(this.movements);
 		updatedMovements.add(movement);
 		return updatedMovements;
 	}
+
 	private BigDecimal getFinalAmountToWithdrawDependingOnBank(BigDecimal amountToWithdraw, String originBank) {
 		return this.getBank().isSameBank(originBank)
 				? amountToWithdraw
@@ -71,9 +73,25 @@ public class Account extends AbstractAggregateRoot {
 		return this.getTotalCredit().value().compareTo(amountToWithdraw) < 0;
 	}
 
+	public Account deposit(Card.Id cardId, BigDecimal amountToDeposit, String originBank) {
+		final var card = this.getCardFromAccount(this, cardId)
+				.orElseThrow(() -> new IllegalArgumentException("Card not found"));
+
+		if (!card.isActive().value())
+			throw new IllegalArgumentException("Card is not active");
+
+		if (!this.getBank().isSameBank(originBank))
+			throw new IllegalArgumentException("Bank should be the same as the card's bank");
+
+		this.totalCredit = new TotalCredit(this.totalCredit.value().add(amountToDeposit));
+		this.movements = this.addMovement(Movement.ofDeposit(amountToDeposit));
+		return this;
+	}
+
 	private Optional<Card> getCardFromAccount(Account account, Card.Id cardId) {
 		return account.getCards().stream().filter(card -> card.id().equals(cardId)).findFirst();
 	}
+
 	public record Iban(@NonNull String value) {
 	}
 

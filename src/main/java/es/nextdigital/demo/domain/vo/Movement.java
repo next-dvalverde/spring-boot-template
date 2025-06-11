@@ -7,8 +7,14 @@ import java.util.UUID;
 
 public record Movement(@NonNull Id id, @NonNull MovementType movementType, @NonNull Quantity quantity) {
 
-	public static Movement ofWithdrawal(BigDecimal amount) {
-		return new Movement(new Movement.Id(UUID.randomUUID()), MovementType.WITHDRAWAL, new Movement.Quantity(amount));
+	public static Movement ofWithdrawal(BigDecimal amountToWithdraw) {
+		return new Movement(new Movement.Id(UUID.randomUUID()), MovementType.WITHDRAWAL,
+				new Movement.Quantity(amountToWithdraw));
+	}
+
+	public static Movement ofDeposit(BigDecimal amountToDeposit) {
+		return new Movement(new Movement.Id(UUID.randomUUID()), MovementType.DEPOSIT,
+				new Movement.Quantity(amountToDeposit));
 	}
 
 	public record Id(@NonNull UUID value) {

@@ -1,9 +1,8 @@
 package es.nextdigital.demo.apirest.controller;
 
-import es.nextdigital.demo.apirest.dto.MoneyWithdrawalRequestDTO;
-import es.nextdigital.demo.apirest.dto.MoneyWithdrawalResponseDTO;
-import es.nextdigital.demo.apirest.dto.MovementDTO;
+import es.nextdigital.demo.apirest.dto.*;
 import es.nextdigital.demo.application.GetAccountMovementQuery;
+import es.nextdigital.demo.application.MoneyDepositCommand;
 import es.nextdigital.demo.application.MoneyWithdrawalCommand;
 import es.nextdigital.demo.domain.Account;
 import es.nextdigital.demo.domain.vo.Movement;
@@ -44,6 +43,16 @@ public class Controller {
 		final var result = (Account) this.commandGateway.sendAndWait(new MoneyWithdrawalCommand(UUID.fromString(cardId),
 				moneyWithdrawalRequestDTO.quantityToWithdraw(), moneyWithdrawalRequestDTO.bank()));
 		final var response = new MoneyWithdrawalResponseDTO(result.getIban().value());
+		return ResponseEntity.status(HttpStatus.CREATED).body(response);
+	}
+
+	@RequestMapping(method = RequestMethod.POST, value = "/card/{cardId}/deposits", produces = {
+			"application/json"}, consumes = {"application/json"})
+	ResponseEntity<MoneyDepositResponseDTO> moneyDepositPost(@PathVariable("cardId") String cardId,
+			@RequestBody MoneyDepositRequestDTO moneyDepositRequestDTO) {
+		final var result = (Account) this.commandGateway.sendAndWait(new MoneyDepositCommand(UUID.fromString(cardId),
+				moneyDepositRequestDTO.quantityToDeposit(), moneyDepositRequestDTO.bank()));
+		final var response = new MoneyDepositResponseDTO(result.getIban().value());
 		return ResponseEntity.status(HttpStatus.CREATED).body(response);
 	}
 
