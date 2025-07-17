@@ -1,0 +1,78 @@
+
+# TARJETAS
+
+### ACTIVAR TARJETA
+
+POST http://localhost:8080/v1/api/tarjetas/1234567890123456/activar
+Content-Type: application/json
+
+{
+  "pinInicial": "1234"
+}
+
+### MODIFICAR PIN TARJETA
+
+PUT http://localhost:8080/v1/api/tarjetas/1234567890123456/cambiar-pin
+Content-Type: application/json
+
+{
+  "pinActual": "1234",
+  "nuevoPin": "5678"
+}
+
+
+### MOVIMIENTOS
+
+### OBTENER MOVIMIENTOS
+
+GET http://localhost:8080/v1/api/cuentas/ES1000000000000000000001/movimientos
+
+###
+
+GET http://localhost:8080/v1/api/cuentas/ES123456789000000001/movimientos
+Accept: application/json
+
+###
+
+### Ingresar 200.00 con tarjeta DEBITO '4111111111111111' (Banco Ejemplo)
+POST http://localhost:8080/v1/api/cuentas/ingresar
+Content-Type: application/json
+
+{
+  "numeroTarjeta": "4111111111111111",
+  "pinHash": "1234",
+  "cantidad": 100,
+  "bancoCajero": {
+    "id": 1,
+    "nombre": "Banco Ejemplo",
+    "comisionCajeroAjeno": 0.02
+  }
+}
+
+###
+
+### Retirar 150.00 con tarjeta DEBITO '4111111111111111' (Banco Ejemplo)
+POST http://localhost:8080/v1/api/cuentas/retirar
+Content-Type: application/json
+
+{
+  "numeroTarjeta": "4111111111111111",
+  "pinHash": "1234",
+  "cantidad": 150.00,
+  "bancoCajero": {
+    "id": 1,
+    "nombre": "Banco Ejemplo",
+    "comisionCajeroAjeno": 0.02
+  }
+}
+
+### Transferir 100.00 desde tarjeta CREDITO '5500000000000004' (Banco Ejemplo) a cuenta 'ES1000000000000000000003' (Banco Secundario)
+POST http://localhost:8080/v1/api/cuentas/transferir
+Content-Type: application/json
+
+{
+  "numeroTarjeta": "5500000000000004",
+  "pinHash": "1234",
+  "ibanDestino": "ES1000000000000000000003",
+  "cantidad": 100.00
+}
