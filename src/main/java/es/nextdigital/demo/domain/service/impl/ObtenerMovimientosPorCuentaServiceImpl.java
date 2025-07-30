@@ -15,23 +15,20 @@ import es.nextdigital.demo.domain.repository.MovimientoRepository;
 import es.nextdigital.demo.domain.service.ObtenerMovimientosPorCuentaService;
 import es.nextdigital.demo.infra.mapper.MovimientoMapper;
 import es.nextdigital.demo.presentation.dto.MovimientoDto;
-import lombok.RequiredArgsConstructor;
 
 @Service
-@RequiredArgsConstructor
 public class ObtenerMovimientosPorCuentaServiceImpl implements ObtenerMovimientosPorCuentaService {
 
+	//he tenido que usar constructor manual pq no va lombok y estaba poerdiendo mucho tiempo
     private final MovimientoRepository movimientoRepository;
-    private final MovimientoMapper movimientoMapper;
-    
-    //He tenido que usar el constructor manualmente porque no se que error me esta dando lombok
-    public ObtenerMovimientosPorCuentaServiceImpl(
-        MovimientoRepository movimientoRepository,
-        MovimientoMapper movimientoMapper
-    ) {
-        this.movimientoRepository = movimientoRepository;
-        this.movimientoMapper = movimientoMapper;
-    }
+    public ObtenerMovimientosPorCuentaServiceImpl(MovimientoRepository movimientoRepository,
+			MovimientoMapper movimientoMapper) {
+		super();
+		this.movimientoRepository = movimientoRepository;
+		this.movimientoMapper = movimientoMapper;
+	}
+
+	private final MovimientoMapper movimientoMapper;
 
     @Override
     public List<MovimientoDto> obtenerMovimientos(Long cuentaId) {

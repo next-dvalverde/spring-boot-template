@@ -16,23 +16,19 @@ import org.springframework.web.bind.annotation.RestController;
 
 import es.nextdigital.demo.domain.service.ObtenerMovimientosPorCuentaService;
 import es.nextdigital.demo.presentation.dto.MovimientoDto;
-import lombok.AllArgsConstructor;
-import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/api/cuentas")
-@RequiredArgsConstructor
-@AllArgsConstructor
 public class MovimientoController {
 	private final ObtenerMovimientosPorCuentaService service;
 
-	//He tenido que usar el constructor manualmente porque no se que error me esta dando lombok
-	public MovimientoController(ObtenerMovimientosPorCuentaService service) {
+    public MovimientoController(ObtenerMovimientosPorCuentaService service) {
+		super();
 		this.service = service;
 	}
 
 	@GetMapping("/{cuentaId}/movimientos")
-	public ResponseEntity<List<MovimientoDto>> obtenerMovimientos(@PathVariable Long cuentaId) {
-		return ResponseEntity.ok(service.obtenerMovimientos(cuentaId));
-	}
+    public ResponseEntity<List<MovimientoDto>> obtenerMovimientos(@PathVariable Long cuentaId) {
+        return ResponseEntity.ok(service.obtenerMovimientos(cuentaId));
+    }
 }
