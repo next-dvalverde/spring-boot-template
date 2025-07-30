@@ -19,9 +19,16 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class TarjetaServiceImpl implements TarjetaService {
 
+	//he tenido que usar constructor manual pq no va lombok y estaba poerdiendo mucho tiempo
+
     private final TarjetaRepository tarjetaRepository;
 
-    private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+    private BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+  
+    public TarjetaServiceImpl(TarjetaRepository tarjetaRepository, BCryptPasswordEncoder passwordEncoder) {
+        this.tarjetaRepository = tarjetaRepository;
+        this.passwordEncoder = passwordEncoder;
+    }
 
     @Override
     public void activarTarjeta(Long id, String pin) {
