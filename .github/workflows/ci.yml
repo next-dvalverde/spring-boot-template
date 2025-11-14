@@ -1,0 +1,57 @@
+name: CI - Spring Boot
+
+# Se ejecuta cuando se hace PR de dev a main
+on:
+  pull_request:
+    branches:
+      - main
+    paths-ignore:
+      - README.md  # Opcional: ignora cambios solo en README
+
+# Entorno donde correrá
+jobs:
+  build-and-test:
+    name: Build & Test
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Clonar el repositorio
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # 2. Configurar Java
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'  # OpenJDK
+          java-version: 17
+
+      # 3. Cache de Maven para acelerar builds
+      - name: Cache Maven packages
+        uses: actions/cache@v3
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
+
+      # 4. Construir proyecto con Maven
+      - name: Build with Maven
+        run: mvn clean compile
+
+      # 5. Ejecutar tests unitarios e integración
+      - name: Run tests
+        run: mvn test
+
+      # 6.  Generar JAR
+      - name: Package Spring Boot JAR
+        run: mvn package -DskipTests
+
+      # 7. Construir imagen Docker y etiquetar
+      - name: Build Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: false
+          tags: spring-boot-magomez-demo-next:latest
