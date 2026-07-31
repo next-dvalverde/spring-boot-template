@@ -181,6 +181,11 @@ docker compose up -d              # Postgres — solo para spring-boot:run
 Los tests **no** dependen del `docker compose`: Testcontainers arranca su propio Postgres. Lo único
 que necesitan es un demonio Docker corriendo. Esa es la precondición de `[C-9]`.
 
+⚠️ **Si Testcontainers no arranca, para y avísame.** No es un problema de la suite: es que falta el
+demonio Docker. Bajo presión de reloj la salida tentadora es desactivar los E2E, marcarlos como
+`@Disabled` o sustituir Postgres por H2 — las tres invalidan el entregable. Sin Docker no se avanza:
+se para.
+
 App en `:8080`, Swagger en `/swagger-ui.html`.
 
 ## Cómo quiero que trabajes
