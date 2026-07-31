@@ -70,4 +70,11 @@ public class Account {
     public long getVersion() {
         return version;
     }
+
+    // La aritmetica del saldo vive aqui, no en el servicio. Las guardas de
+    // saldo son de WithdrawalPolicy; el CHECK (balance >= 0) del schema es la
+    // ultima linea de defensa.
+    public void debit(BigDecimal amount) {
+        balance = balance.subtract(amount);
+    }
 }

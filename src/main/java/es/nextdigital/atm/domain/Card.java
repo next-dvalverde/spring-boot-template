@@ -133,6 +133,12 @@ public class Card {
         pinChangeRequired = true;
     }
 
+    // Una disposicion de credito no toca account.balance: sube creditUsed y
+    // sus apuntes van con settlesAccount = false (A-1).
+    public void useCredit(BigDecimal amount) {
+        creditUsed = creditUsed.add(amount);
+    }
+
     public void changePin(String newPinHash) {
         pinHash = newPinHash;
         pinChangeRequired = false;
