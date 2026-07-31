@@ -23,6 +23,16 @@ public final class FeeCalculator {
         return apply(amount, rule);
     }
 
+    // Quien cobra es el banco de la cuenta ORIGEN (A-3); el servicio ya ha
+    // resuelto si el destino es el mismo banco (por bankId o, si la cuenta es
+    // externa, por el codigo de entidad del IBAN).
+    public static BigDecimal forTransfer(boolean sameBank, BigDecimal amount, FeeRule rule) {
+        if (sameBank) {
+            return zero();
+        }
+        return apply(amount, rule);
+    }
+
     private static BigDecimal apply(BigDecimal amount, FeeRule rule) {
         if (rule == null) {
             return zero();
