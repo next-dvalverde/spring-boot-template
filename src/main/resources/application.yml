@@ -3,7 +3,7 @@ spring:
     name: atm
 
   datasource:
-    url: jdbc:postgresql://localhost:5432/atm
+    url: jdbc:postgresql://localhost:5433/atm
     username: atm
     password: atm
 
