@@ -25,7 +25,9 @@ docker compose up -d postgres  # Postgres en :5433 del host
 ./mvnw spring-boot:run         # app en :8080
 ```
 
-Swagger UI en `/swagger-ui.html`.
+Swagger UI en `/swagger-ui.html`. Para probar sin escribir peticiones, importa
+[`postman/ATM-API.postman_collection.json`](postman/ATM-API.postman_collection.json): trae las
+tarjetas del seed como variables y la petición de sesión guarda el token automáticamente.
 
 ## Tests
 

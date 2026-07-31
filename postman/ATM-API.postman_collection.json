@@ -1,0 +1,388 @@
+{
+  "info": {
+    "name": "ATM API — NextDigital (prueba técnica)",
+    "description": "Colección lista para evaluar la API contra los datos de V2__seed.sql.\n\n**Cómo usarla:**\n1. Arranca el stack: `docker compose up --build` (o `docker compose up -d postgres` + `./mvnw spring-boot:run`).\n2. Lanza cualquier petición de la carpeta *1 · Sesión*: el token se guarda solo en `{{token}}` y el resto de peticiones lo usan como `Authorization: Bearer`.\n3. El token caduca a los **120 s**: si recibes `401 INVALID_SESSION`, vuelve a abrir sesión.\n\n**Ojo con el contador de PIN:** al 3.er fallo la tarjeta se bloquea (`CARD_BLOCKED`) y no hay endpoint para desbloquearla — habría que recrear la base (`docker compose down -v`).\n\nLa carpeta *2 · Flujo tarjeta nueva* está pensada para ejecutarse en orden y una sola vez por base de datos limpia (la activación no es repetible: la segunda vez responde `CARD_ALREADY_ACTIVE`, que también es un caso evaluable).\n\nErrores: `{ code, message, timestamp }` con códigos estables (catálogo en CLAUDE.md).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080" },
+    { "key": "token", "value": "" },
+    { "key": "cardDebit", "value": "4001000000000001" },
+    { "key": "pinDebit", "value": "1975" },
+    { "key": "cardCredit", "value": "4001000000000002" },
+    { "key": "pinCredit", "value": "2846" },
+    { "key": "cardNew", "value": "4001000000000003" },
+    { "key": "pinEnvelope", "value": "4821" },
+    { "key": "pinNew", "value": "8642" },
+    { "key": "atmOwn", "value": "50000000-0000-0000-0000-000000000001" },
+    { "key": "atmForeign", "value": "50000000-0000-0000-0000-000000000002" },
+    { "key": "accountA1", "value": "30000000-0000-0000-0000-000000000001" },
+    { "key": "accountA2", "value": "30000000-0000-0000-0000-000000000002" },
+    { "key": "accountForeignHolder", "value": "30000000-0000-0000-0000-000000000003" },
+    { "key": "ibanInternal", "value": "ES7515000001000000000002" },
+    { "key": "ibanExternal", "value": "GB82WEST12345698765432" }
+  ],
+  "item": [
+    {
+      "name": "1 · Sesión",
+      "item": [
+        {
+          "name": "Abrir sesión — tarjeta débito",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "if (body.token) { pm.collectionVariables.set('token', body.token); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/api/v1/sessions", "host": ["{{baseUrl}}"], "path": ["api", "v1", "sessions"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cardNumber\": \"{{cardDebit}}\",\n  \"pin\": \"{{pinDebit}}\",\n  \"atmId\": \"{{atmOwn}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "200 → { token, pinChangeRequired: false }. Guarda {{token}} automáticamente. Cuenta asociada: A1 (1000 € sembrados)."
+          }
+        },
+        {
+          "name": "Abrir sesión — tarjeta crédito",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "if (body.token) { pm.collectionVariables.set('token', body.token); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/api/v1/sessions", "host": ["{{baseUrl}}"], "path": ["api", "v1", "sessions"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cardNumber\": \"{{cardCredit}}\",\n  \"pin\": \"{{pinCredit}}\",\n  \"atmId\": \"{{atmOwn}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Sesión con la tarjeta CREDIT (límite 500 €). Con este token: la retirada sube creditUsed sin tocar el saldo (recibo con balanceAfter: null); ingreso y transferencia responden 409 OPERATION_NOT_SUPPORTED_FOR_CARD_TYPE."
+          }
+        },
+        {
+          "name": "Abrir sesión — en cajero ajeno",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "if (body.token) { pm.collectionVariables.set('token', body.token); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/api/v1/sessions", "host": ["{{baseUrl}}"], "path": ["api", "v1", "sessions"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cardNumber\": \"{{cardDebit}}\",\n  \"pin\": \"{{pinDebit}}\",\n  \"atmId\": \"{{atmForeign}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Sesión en el cajero de Otro Banco. Con este token: la retirada genera 2 apuntes (WITHDRAWAL + FEE de 1.50 + 1%) con el mismo operationId, y el ingreso responde 403 FOREIGN_ATM_DEPOSIT_NOT_ALLOWED."
+          }
+        },
+        {
+          "name": "Abrir sesión — PIN erróneo (401)",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/api/v1/sessions", "host": ["{{baseUrl}}"], "path": ["api", "v1", "sessions"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cardNumber\": \"{{cardDebit}}\",\n  \"pin\": \"1111\",\n  \"atmId\": \"{{atmOwn}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "401 INVALID_PIN. ⚠️ Cuenta intentos: al 3.er fallo consecutivo la tarjeta pasa a CARD_BLOCKED (409). Un acierto resetea el contador."
+          }
+        }
+      ]
+    },
+    {
+      "name": "2 · Flujo tarjeta nueva (en orden)",
+      "description": "El escenario 1 del plan, paso a paso. Ejecutar en orden sobre una base recién sembrada.",
+      "item": [
+        {
+          "name": "1. Operar sin activar (409 CARD_NOT_ACTIVATED)",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/api/v1/sessions", "host": ["{{baseUrl}}"], "path": ["api", "v1", "sessions"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cardNumber\": \"{{cardNew}}\",\n  \"pin\": \"{{pinEnvelope}}\",\n  \"atmId\": \"{{atmOwn}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          }
+        },
+        {
+          "name": "2. Activar la tarjeta (200)",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/api/v1/cards/activation", "host": ["{{baseUrl}}"], "path": ["api", "v1", "cards", "activation"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cardNumber\": \"{{cardNew}}\",\n  \"pin\": \"{{pinEnvelope}}\",\n  \"atmId\": \"{{atmOwn}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Valida el PIN \"del sobre\" con el mismo contador de intentos que el login. Repetirla responde 409 CARD_ALREADY_ACTIVE."
+          }
+        },
+        {
+          "name": "3. Abrir sesión (pinChangeRequired: true)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "if (body.token) { pm.collectionVariables.set('token', body.token); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/api/v1/sessions", "host": ["{{baseUrl}}"], "path": ["api", "v1", "sessions"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cardNumber\": \"{{cardNew}}\",\n  \"pin\": \"{{pinEnvelope}}\",\n  \"atmId\": \"{{atmOwn}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          }
+        },
+        {
+          "name": "4. Retirar sin cambiar el PIN (409 PIN_CHANGE_REQUIRED)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/api/v1/operations/withdrawals", "host": ["{{baseUrl}}"], "path": ["api", "v1", "operations", "withdrawals"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 20.00\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "El PIN del sobre no opera: solo deja llegar al cambio de PIN."
+          }
+        },
+        {
+          "name": "5. Cambiar el PIN (204)",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/api/v1/cards/pin", "host": ["{{baseUrl}}"], "path": ["api", "v1", "cards", "pin"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"currentPin\": \"{{pinEnvelope}}\",\n  \"newPin\": \"{{pinNew}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "PINs triviales rechazados con 400 INVALID_PIN_FORMAT: prueba con 0000, 1234 o 4321."
+          }
+        },
+        {
+          "name": "6. Retirar tras el cambio (200)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/api/v1/operations/withdrawals", "host": ["{{baseUrl}}"], "path": ["api", "v1", "operations", "withdrawals"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 20.00\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "3 · Operaciones",
+      "description": "Requieren {{token}} (carpeta 1). El recibo devuelve { operationId, amount, fee, balanceAfter }.",
+      "item": [
+        {
+          "name": "Retirada (200)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/api/v1/operations/withdrawals", "host": ["{{baseUrl}}"], "path": ["api", "v1", "operations", "withdrawals"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 100.00\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Con sesión de cajero ajeno: fee 1.50 + 1% y dos apuntes enlazados por operationId. Con tarjeta de crédito: balanceAfter null y creditUsed sube."
+          }
+        },
+        {
+          "name": "Retirada sobre el límite (409 LIMIT_EXCEEDED)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/api/v1/operations/withdrawals", "host": ["{{baseUrl}}"], "path": ["api", "v1", "operations", "withdrawals"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 500.01\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "El límite (500 €) es por operación y se compara contra amount a secas; la comisión aparte."
+          }
+        },
+        {
+          "name": "Retirada con importe inválido (400 INVALID_AMOUNT)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/api/v1/operations/withdrawals", "host": ["{{baseUrl}}"], "path": ["api", "v1", "operations", "withdrawals"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": -50.00\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "amount > 0 en las tres operaciones: un ingreso negativo sería una retirada sin límite."
+          }
+        },
+        {
+          "name": "Ingreso (200)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/api/v1/operations/deposits", "host": ["{{baseUrl}}"], "path": ["api", "v1", "operations", "deposits"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 50.00\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Solo DEBIT y solo en cajero del propio banco. Con sesión de cajero ajeno → 403; con tarjeta de crédito → 409."
+          }
+        },
+        {
+          "name": "Transferencia interna (200, sin comisión)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/api/v1/operations/transfers", "host": ["{{baseUrl}}"], "path": ["api", "v1", "operations", "transfers"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"targetIban\": \"{{ibanInternal}}\",\n  \"amount\": 25.00,\n  \"concept\": \"prueba interna\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Destino: la otra cuenta de Alice (mismo banco → sin comisión). Genera TRANSFER_OUT y TRANSFER_IN con el mismo operationId — visible en los movimientos de ambas cuentas."
+          }
+        },
+        {
+          "name": "Transferencia externa (200, con comisión)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/api/v1/operations/transfers", "host": ["{{baseUrl}}"], "path": ["api", "v1", "operations", "transfers"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"targetIban\": \"{{ibanExternal}}\",\n  \"amount\": 25.00,\n  \"concept\": \"prueba externa\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "IBAN válido de otro banco: comisión del banco origen (2.50 + 0.25%). Solo se registra la salida (TRANSFER_OUT + FEE); no hay core externo contra el que liquidar."
+          }
+        },
+        {
+          "name": "Transferencia con IBAN inválido (400 INVALID_IBAN)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/api/v1/operations/transfers", "host": ["{{baseUrl}}"], "path": ["api", "v1", "operations", "transfers"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"targetIban\": \"ES0000000000000000000000\",\n  \"amount\": 25.00\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "El checksum mod-97 no cuadra. La validación es estructural + dígito de control, implementada a mano en el dominio."
+          }
+        }
+      ]
+    },
+    {
+      "name": "4 · Cuentas y movimientos",
+      "item": [
+        {
+          "name": "Cuentas del titular (200)",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/v1/accounts", "host": ["{{baseUrl}}"], "path": ["api", "v1", "accounts"] },
+            "description": "Las cuentas del titular de la tarjeta de la sesión — con la tarjeta débito de Alice: sus 2 cuentas."
+          }
+        },
+        {
+          "name": "Movimientos de la cuenta (200)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/accounts/{{accountA1}}/movements?page=0&size=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "accounts", "{{accountA1}}", "movements"],
+              "query": [
+                { "key": "page", "value": "0" },
+                { "key": "size", "value": "20" }
+              ]
+            },
+            "description": "Extracto paginado, más reciente primero. amount siempre positivo: la dirección la dan type y settlesAccount; la FEE comparte operationId con su operación."
+          }
+        },
+        {
+          "name": "Movimientos de cuenta ajena (404, no 403)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/accounts/{{accountForeignHolder}}/movements",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "accounts", "{{accountForeignHolder}}", "movements"]
+            },
+            "description": "La cuenta de Bob con el token de Alice: 404 ACCOUNT_NOT_FOUND, indistinguible de una cuenta inexistente. Un 403 confirmaría que existe (oráculo de enumeración)."
+          }
+        },
+        {
+          "name": "Sin token (401 INVALID_SESSION)",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/v1/accounts", "host": ["{{baseUrl}}"], "path": ["api", "v1", "accounts"] },
+            "description": "Cualquier endpoint protegido sin Authorization: Bearer responde 401 con la misma forma { code, message, timestamp }."
+          }
+        }
+      ]
+    }
+  ]
+}
