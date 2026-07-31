@@ -5,6 +5,7 @@ import es.nextdigital.atm.service.OperationService;
 import es.nextdigital.atm.service.SessionContext;
 import es.nextdigital.atm.web.dto.DepositRequest;
 import es.nextdigital.atm.web.dto.ReceiptResponse;
+import es.nextdigital.atm.web.dto.TransferRequest;
 import es.nextdigital.atm.web.dto.WithdrawalRequest;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -33,5 +34,12 @@ public class OperationController {
     public ReceiptResponse deposit(@RequestAttribute(SessionFilter.SESSION_ATTRIBUTE) SessionContext session,
                                    @Valid @RequestBody DepositRequest request) {
         return ReceiptResponse.from(operationService.deposit(session, request.amount()));
+    }
+
+    @PostMapping("/transfers")
+    public ReceiptResponse transfer(@RequestAttribute(SessionFilter.SESSION_ATTRIBUTE) SessionContext session,
+                                    @Valid @RequestBody TransferRequest request) {
+        return ReceiptResponse.from(operationService.transfer(session, request.targetIban(),
+                request.amount(), request.concept()));
     }
 }
