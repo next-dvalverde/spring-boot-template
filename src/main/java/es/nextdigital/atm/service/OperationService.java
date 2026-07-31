@@ -11,8 +11,10 @@ import es.nextdigital.atm.domain.ErrorCode;
 import es.nextdigital.atm.domain.FeeCalculator;
 import es.nextdigital.atm.domain.FeeOperationType;
 import es.nextdigital.atm.domain.FeeRule;
+import es.nextdigital.atm.domain.IbanValidator;
 import es.nextdigital.atm.domain.Movement;
 import es.nextdigital.atm.domain.MovementType;
+import es.nextdigital.atm.domain.TransferPolicy;
 import es.nextdigital.atm.domain.WithdrawalPolicy;
 import es.nextdigital.atm.repository.AccountRepository;
 import es.nextdigital.atm.repository.AtmRepository;
@@ -22,6 +24,7 @@ import es.nextdigital.atm.repository.FeePolicyRepository;
 import es.nextdigital.atm.repository.MovementRepository;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.Optional;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -125,6 +128,70 @@ public class OperationService {
                 atm.getId(), operationId, MovementType.DEPOSIT, amount, true,
                 account.getBalance(), "Cash deposit", null));
         return new Receipt(operationId, amount, BigDecimal.ZERO.setScale(2), account.getBalance());
+    }
+
+    @Transactional
+    public Receipt transfer(SessionContext session, String targetIban, BigDecimal requestedAmount,
+                            String concept) {
+        Card card = requireCard(session);
+        CardGuards.requireOperational(card);
+        AmountPolicy.requirePositive(requestedAmount);
+        BigDecimal amount = requestedAmount.setScale(2, RoundingMode.UNNECESSARY);
+
+        // B-5: misma restriccion que el ingreso — el credito solo dispone.
+        if (card.getType() == CardType.CREDIT) {
+            throw new BusinessException(ErrorCode.OPERATION_NOT_SUPPORTED_FOR_CARD_TYPE,
+                    "Transfers are not supported for credit cards");
+        }
+        IbanValidator.validate(targetIban);
+        Account origin = accountRepository.findById(card.getAccountId())
+                .orElseThrow(() -> new BusinessException(ErrorCode.ACCOUNT_NOT_FOUND, "Account not found"));
+        TransferPolicy.requireDifferentTarget(origin.getIban(), targetIban);
+        Bank originBank = bankRepository.findById(origin.getBankId())
+                .orElseThrow(() -> new BusinessException(ErrorCode.ACCOUNT_NOT_FOUND, "Account not found"));
+
+        // Resolucion del banco destino, en este orden: cuenta en nuestra base
+        // (por bankId) y, solo si no existe, codigo de entidad del IBAN.
+        Optional<Account> target = accountRepository.findByIban(targetIban);
+        boolean sameBank = target
+                .map(t -> t.getBankId().equals(origin.getBankId()))
+                .orElseGet(() -> IbanValidator.entityCode(targetIban).equals(originBank.getCode()));
+
+        BigDecimal fee = FeeCalculator.forTransfer(sameBank, amount, transferRuleOf(originBank));
+        TransferPolicy.checkFunds(origin.getBalance(), amount, fee);
+
+        UUID operationId = UUID.randomUUID();
+        // Truncado al ancho de la columna: un concepto largo no es un error de
+        // negocio y no hay codigo en el catalogo que le corresponda.
+        String description = (concept == null || concept.isBlank())
+                ? "Outgoing transfer"
+                : concept.substring(0, Math.min(concept.length(), 200));
+        origin.debit(amount);
+        movementRepository.save(new Movement(UUID.randomUUID(), origin.getId(), card.getId(),
+                session.atmId(), operationId, MovementType.TRANSFER_OUT, amount, true,
+                origin.getBalance(), description, targetIban));
+        if (fee.signum() > 0) {
+            origin.debit(fee);
+            movementRepository.save(new Movement(UUID.randomUUID(), origin.getId(), card.getId(),
+                    session.atmId(), operationId, MovementType.FEE, fee, true,
+                    origin.getBalance(), "Transfer fee", targetIban));
+        }
+        // Si el destino es externo solo se registra la salida: no hay otro
+        // core contra el que liquidar (C-5).
+        target.ifPresent(t -> {
+            t.credit(amount);
+            movementRepository.save(new Movement(UUID.randomUUID(), t.getId(), null,
+                    session.atmId(), operationId, MovementType.TRANSFER_IN, amount, true,
+                    t.getBalance(), description, origin.getIban()));
+        });
+        return new Receipt(operationId, amount, fee, origin.getBalance());
+    }
+
+    private FeeRule transferRuleOf(Bank originBank) {
+        return feePolicyRepository
+                .findByBankCodeAndOperationType(originBank.getCode(), FeeOperationType.TRANSFER)
+                .map(policy -> new FeeRule(policy.getFixedAmount(), policy.getPercentage()))
+                .orElse(null);
     }
 
     private Card requireCard(SessionContext session) {
