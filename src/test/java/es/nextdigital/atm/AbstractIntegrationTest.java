@@ -1,5 +1,6 @@
 package es.nextdigital.atm;
 
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -14,6 +15,7 @@ import org.testcontainers.containers.PostgreSQLContainer;
  * H2 no es el schema de produccion.
  */
 @SpringBootTest
+@AutoConfigureMockMvc
 public abstract class AbstractIntegrationTest {
 
     static final PostgreSQLContainer<?> POSTGRES =
