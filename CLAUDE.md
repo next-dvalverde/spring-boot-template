@@ -34,7 +34,7 @@ BCrypt · JUnit 5 + MockMvc + **Testcontainers** · springdoc-openapi.
 ## Arquitectura
 
 ```
-com.nextdigital.atm
+es.nextdigital.atm
 ├── config/       beans, SessionFilter, OpenAPI
 ├── domain/       entidades + enums + REGLAS PURAS (sin Spring)
 ├── repository/

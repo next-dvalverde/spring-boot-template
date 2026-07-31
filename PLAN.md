@@ -159,7 +159,7 @@ se replica para que no haya dos listas que diverjan.
 ## 5. Estructura
 
 ```
-com.nextdigital.atm
+es.nextdigital.atm
 ├── config/            (beans, filtro de sesión, OpenAPI)
 ├── domain/            (entidades + enums + reglas puras: FeeCalculator, IbanValidator,
 │                       WithdrawalPolicy, AmountPolicy, PinPolicy)

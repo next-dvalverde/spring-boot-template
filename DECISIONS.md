@@ -140,6 +140,47 @@ sería peor: no se puede revocar (y un cajero necesita invalidar la sesión al r
 obliga a gestionar una clave de firma, y el payload viajaría con datos de la tarjeta. El token
 opaco no dice nada de sí mismo, que es justo lo que se quiere. Ver [C-1](#c-1--sesiones-en-memoria-de-proceso).
 
+### A-7 · El template de la empresa no cumplía el stack del plan
+
+El repositorio base entregado por NextDigital (`spring-boot-template`) venía con
+`spring-boot-starter-parent 3.1.0` y `<java.version>17</java.version>`, mientras `PLAN.md` §Stack
+fija **Java 21 + Spring Boot 3**. No es un detalle cosmético: Boot 3.1.0 es de mayo de 2023,
+anterior al GA de Java 21, y el soporte oficial de Java 21 no llega hasta Boot **3.2**. Compilar a
+21 sobre 3.1 arrastra un ByteBuddy que no reconoce el bytecode 65 — el riesgo se materializaría
+como una suite de tests roja en el tramo 2:05–2:35, que es exactamente donde no hay margen.
+
+Además faltaban dependencias que el plan da por supuestas, una de ellas silenciosa:
+`spring-boot-starter-web` **no incluye implementador de Bean Validation**, así que los `@Valid` /
+`@Positive` de los DTOs no se habrían evaluado y la primera capa de defensa de [B-2](#parte-b--huecos-que-son-bugs-no-deuda-se-cierran-dentro-del-alcance)
+habría sido decorativa sin dar ningún error.
+
+**Resolución (2026-07-31):** parent a **3.5.16** — última línea 3.x con soporte (3.3 quedó EOL en
+2026, y Boot 4 se descarta porque contradice el "Boot 3" del plan y metería riesgo de compatibilidad
+con springdoc y Testcontainers en una prueba de 3 h). `java.version` a 21. Se añaden
+`spring-boot-starter-validation`, `flyway-core` + `flyway-database-postgresql` (desde Flyway 10 el
+soporte de cada motor va en módulo aparte), el driver `postgresql`, `spring-security-crypto`
+suelto, `springdoc-openapi-starter-webmvc-ui` y los artefactos de Testcontainers. Se retira
+`spring-boot-devtools`: está fuera de la lista del stack y sus reinicios en caliente estorban en
+los E2E.
+
+Se conserva el `groupId` **`es.nextdigital`** del template y solo se renombra el artefacto y el
+paquete base `demo → atm`, es decir **`es.nextdigital.atm`**. `PLAN.md` §5 y `CLAUDE.md` decían
+`com.nextdigital.atm`; se ajustan esos dos ficheros, porque el groupId que fija la empresa pesa más
+que el ejemplo del plan.
+
+**Coste de revertir:** nulo mientras no haya código. Por eso se hizo en el bloque 0 y no después.
+
+### A-8 · El repositorio se checkouteaba en CRLF sobre blobs en LF
+
+El template no traía `.gitattributes`. Los blobs commiteados están en LF y el working tree en
+Windows estaba en CRLF, de modo que `git status` marcaba los 9 ficheros como modificados (658
+líneas de puro ruido) y el primer commit real habría enterrado el cambio de verdad. Peor: un `mvnw`
+con CRLF falla dentro del Dockerfile multi-stage del tramo 2:35 con `bad interpreter`, un fallo que
+no se reproduce en local y cuesta media hora encontrar.
+
+**Resolución (2026-07-31):** `.gitattributes` con `* text=auto eol=lf`, `mvnw` y `*.sh` forzados a
+LF, `*.cmd` / `*.bat` a CRLF, y el working tree normalizado antes del primer commit.
+
 ---
 
 ## Parte B — Huecos que son bugs, no deuda: se cierran dentro del alcance
