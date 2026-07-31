@@ -1,32 +1,47 @@
-# Spring Boot Template
+# API de Cajeros — NextDigital (prueba técnica)
 
-This is a Spring Boot template that can be customized as per your requirements.
+API REST que modela las operaciones de un cajero automático: activación de tarjeta, cambio de PIN,
+retirada, ingreso, transferencia y consulta de movimientos, con distinción real entre tarjeta de
+débito y de crédito.
 
-## Getting Started
+- Plan de trabajo y reglas de negocio: [`PLAN.md`](PLAN.md)
+- Registro de decisiones y deuda técnica: [`DECISIONS.md`](DECISIONS.md)
 
-To start using this Spring Boot template, follow these steps:
+## Stack
 
-1. Clone or download the template repository.
-2. Open the project in your preferred Integrated Development Environment (IDE).
-3. Customize the project by modifying the source code, configurations, and dependencies as necessary.
-4. Build and run the project using the provided build tools, such as Maven or Gradle.
+Java 21 · Spring Boot 3.5 · Maven · PostgreSQL · Flyway · Spring Data JPA · BCrypt ·
+JUnit 5 + MockMvc + Testcontainers · springdoc-openapi
 
-## Documentation
+## Puesta en marcha
 
-For detailed documentation, tutorials, and examples on how to work with Spring Boot, please refer to the official Spring Boot website: [https://spring.io/projects/spring-boot](https://spring.io/projects/spring-boot)
+```bash
+docker compose up -d     # Postgres
+./mvnw spring-boot:run   # app en :8080
+```
 
-## Community and Support
+Swagger UI en `/swagger-ui.html`.
 
-Join the Spring Boot community to connect with other developers and get support:
+## Tests
 
-- [Spring Boot Forum](https://community.spring.io/forum/spring-boot)
-- [Stack Overflow](https://stackoverflow.com/questions/tagged/spring-boot)
-- [GitHub Issues](https://github.com/spring-projects/spring-boot/issues)
+```bash
+./mvnw test              # levanta su propio Postgres vía Testcontainers
+./mvnw -q verify         # build completo
+```
 
-## License
+Requieren un demonio Docker corriendo. No dependen del `docker compose`.
 
-This Spring Boot template is provided under the [Apache 2.0 license](https://github.com/spring-projects/spring-boot/blob/main/LICENSE.txt).
+## Modelo de dominio
 
----
+_Pendiente._
 
-Feel free to customize and adapt this Spring Boot template to suit your needs. Happy coding!
+## Endpoints
+
+_Pendiente._
+
+## Decisiones de diseño
+
+_Pendiente — ver [`DECISIONS.md`](DECISIONS.md)._
+
+## Fuera de alcance
+
+_Pendiente._
