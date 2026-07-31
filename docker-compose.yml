@@ -1,6 +1,20 @@
-# Solo hace falta para `./mvnw spring-boot:run`. Los tests NO dependen de este
-# compose: Testcontainers levanta su propio Postgres con esta misma imagen.
+# `docker compose up` levanta Postgres y la API. Para desarrollo,
+# `docker compose up -d postgres` + `./mvnw spring-boot:run`. Los tests NO
+# dependen de este compose: Testcontainers levanta su propio Postgres con esta
+# misma imagen.
 services:
+  app:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      # Dentro de la red del compose se habla con el puerto interno 5432; el
+      # 5433 del host es solo para el spring-boot:run local.
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/atm
+    depends_on:
+      postgres:
+        condition: service_healthy
+
   postgres:
     image: postgres:16-alpine
     container_name: atm-postgres

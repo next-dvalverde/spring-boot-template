@@ -421,6 +421,23 @@ escenario significa **borrarlo y decirlo en el README**, no dejarlo escrito y en
 
 ---
 
+## Parte F — Decisiones menores tomadas durante la implementación
+
+Ninguna estaba en `PLAN.md`; todas son internas, reversibles y con fecha 2026-07-31. Se anotan
+para que no parezcan accidentes.
+
+| # | Decisión | Por qué |
+|---|---|---|
+| F-1 | El token viaja en `Authorization: Bearer <uuid>` | El plan no fijaba el transporte. Es la convención que Swagger UI entiende sin configuración extra. Una constante en `SessionFilter`; cambiarlo es un sitio |
+| F-2 | El `message` de cada constraint de los DTOs es un código del catálogo (`@Pattern(..., message = "INVALID_PIN_FORMAT")`) | La validación de forma responde con los mismos códigos estables que el dominio sin una segunda tabla de mapeo que pueda divergir. `GlobalExceptionHandler` hace `ErrorCode.valueOf(message)` |
+| F-3 | Las columnas `CHAR` (`bank.code`, `account.currency`, `fee_policy.bank_code`) se mapean con `@JdbcTypeCode(SqlTypes.CHAR)` | `ddl-auto: validate` rechaza `bpchar` contra el `varchar` que Hibernate espera para `String`. La alternativa era editar `V1__schema.sql` ya commiteada, y una migración no se edita: se ajusta el mapeo, no el schema |
+| F-4 | El incremento de `failed_attempts` se graba en `REQUIRES_NEW` (`PinFailureRecorder`) | La operación que falla el PIN termina en excepción y su transacción se revierte; sin transacción aparte el contador se revertiría con ella y el bloqueo a los 3 intentos sería decorativo |
+| F-5 | El `concept` de la transferencia se trunca a 200 caracteres en el servicio, sin validación | Un concepto largo no es un error de negocio y no hay código en el catálogo que le corresponda sin mentir. Truncar es lo que hace la banca real con los conceptos |
+| F-6 | El recibo devuelve `balanceAfter: null` en operaciones de crédito | La cuenta no se ha movido; devolver el saldo sugeriría lo contrario. Coherente con `balance_after` NULL en los apuntes que no liquidan (B-10) |
+| F-7 | Los E2E van en una sola clase con orden explícito y las invariantes se recalculan desde los saldos sembrados sobre todo el historial | El estado fluye de un escenario al siguiente (la tarjeta activada en el 1 agota su cuenta en el 2); recalcular desde el seed hace las aserciones válidas en cualquier punto de la suite, sin fixtures por test ni limpieza entre escenarios |
+
+---
+
 ## Cómo se lee este documento en una revisión
 
 Las entradas de la **parte B** son cosas que estarían mal si no se hicieran. Las de la **parte C**
