@@ -107,4 +107,36 @@ public class Card {
     public long getVersion() {
         return version;
     }
+
+    /**
+     * Con 4 digitos el espacio son 10^4 combinaciones: quien protege de verdad
+     * es este contador, no el hash. Devuelve si la tarjeta ha quedado bloqueada.
+     */
+    public boolean recordPinFailure() {
+        failedAttempts++;
+        if (failedAttempts >= MAX_PIN_ATTEMPTS) {
+            status = CardStatus.BLOCKED;
+        }
+        return status == CardStatus.BLOCKED;
+    }
+
+    // B-1: un acierto resetea el contador; sin esto la tarjeta se bloquea sola
+    // tras 3 fallos repartidos en meses.
+    public void resetPinFailures() {
+        failedAttempts = 0;
+    }
+
+    // La activacion fuerza el cambio del PIN del sobre: el que viaja impreso
+    // no puede quedarse como PIN definitivo.
+    public void activate() {
+        status = CardStatus.ACTIVE;
+        pinChangeRequired = true;
+    }
+
+    public void changePin(String newPinHash) {
+        pinHash = newPinHash;
+        pinChangeRequired = false;
+    }
+
+    private static final int MAX_PIN_ATTEMPTS = 3;
 }
