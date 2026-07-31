@@ -34,6 +34,25 @@ class CardTest {
         assertEquals(CardStatus.BLOCKED, card.getStatus());
     }
 
+    @Test
+    void activationForcesPinChange() {
+        Card card = new Card(UUID.randomUUID(), "4001000000000003", UUID.randomUUID(),
+                CardType.DEBIT, CardStatus.INACTIVE, "$2a$10$hash", false,
+                new BigDecimal("500.00"), null, BigDecimal.ZERO);
+        card.activate();
+        assertEquals(CardStatus.ACTIVE, card.getStatus());
+        assertTrue(card.isPinChangeRequired());
+    }
+
+    @Test
+    void changingThePinClearsTheRequirement() {
+        Card card = activeDebitCard();
+        card.activate();
+        card.changePin("$2a$10$newhash");
+        assertEquals("$2a$10$newhash", card.getPinHash());
+        assertFalse(card.isPinChangeRequired());
+    }
+
     // B-1: sin el reset, 3 fallos repartidos en meses bloquean la tarjeta.
     @Test
     void successResetsTheCounter() {

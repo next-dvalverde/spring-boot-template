@@ -126,5 +126,17 @@ public class Card {
         failedAttempts = 0;
     }
 
+    // La activacion fuerza el cambio del PIN del sobre: el que viaja impreso
+    // no puede quedarse como PIN definitivo.
+    public void activate() {
+        status = CardStatus.ACTIVE;
+        pinChangeRequired = true;
+    }
+
+    public void changePin(String newPinHash) {
+        pinHash = newPinHash;
+        pinChangeRequired = false;
+    }
+
     private static final int MAX_PIN_ATTEMPTS = 3;
 }
