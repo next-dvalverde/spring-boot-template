@@ -1,0 +1,22 @@
+# Solo hace falta para `./mvnw spring-boot:run`. Los tests NO dependen de este
+# compose: Testcontainers levanta su propio Postgres con esta misma imagen.
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: atm-postgres
+    environment:
+      POSTGRES_DB: atm
+      POSTGRES_USER: atm
+      POSTGRES_PASSWORD: atm
+    ports:
+      - "5432:5432"
+    volumes:
+      - atm-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U atm -d atm"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  atm-pgdata:

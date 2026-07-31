@@ -1,0 +1,14 @@
+# Normalizacion de fin de linea. Sin esto el repo se checkouteaba en CRLF sobre
+# blobs en LF y cualquier commit arrastraba el fichero entero como modificado.
+* text=auto eol=lf
+
+# El wrapper corre como shebang dentro del Dockerfile multi-stage: con CRLF
+# el contenedor falla con "bad interpreter".
+mvnw   text eol=lf
+*.sh   text eol=lf
+
+# Los scripts de Windows sí quieren CRLF.
+*.cmd  text eol=crlf
+*.bat  text eol=crlf
+
+*.jar  binary

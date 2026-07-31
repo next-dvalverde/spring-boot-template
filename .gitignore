@@ -31,3 +31,12 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Tooling local ###
+.claude/
+
+### Entorno ###
+# Las credenciales de Postgres viven en docker-compose.yml con valores de
+# desarrollo. Si alguna vez se externalizan, que no acaben en el repo.
+.env
+*.local.yml
