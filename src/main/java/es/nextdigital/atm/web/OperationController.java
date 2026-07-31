@@ -3,6 +3,7 @@ package es.nextdigital.atm.web;
 import es.nextdigital.atm.config.SessionFilter;
 import es.nextdigital.atm.service.OperationService;
 import es.nextdigital.atm.service.SessionContext;
+import es.nextdigital.atm.web.dto.DepositRequest;
 import es.nextdigital.atm.web.dto.ReceiptResponse;
 import es.nextdigital.atm.web.dto.WithdrawalRequest;
 import jakarta.validation.Valid;
@@ -26,5 +27,11 @@ public class OperationController {
     public ReceiptResponse withdraw(@RequestAttribute(SessionFilter.SESSION_ATTRIBUTE) SessionContext session,
                                     @Valid @RequestBody WithdrawalRequest request) {
         return ReceiptResponse.from(operationService.withdraw(session, request.amount()));
+    }
+
+    @PostMapping("/deposits")
+    public ReceiptResponse deposit(@RequestAttribute(SessionFilter.SESSION_ATTRIBUTE) SessionContext session,
+                                   @Valid @RequestBody DepositRequest request) {
+        return ReceiptResponse.from(operationService.deposit(session, request.amount()));
     }
 }

@@ -98,6 +98,35 @@ public class OperationService {
         return new Receipt(operationId, amount, fee, null);
     }
 
+    @Transactional
+    public Receipt deposit(SessionContext session, BigDecimal requestedAmount) {
+        Card card = requireCard(session);
+        CardGuards.requireOperational(card);
+        AmountPolicy.requirePositive(requestedAmount);
+        BigDecimal amount = requestedAmount.setScale(2, RoundingMode.UNNECESSARY);
+
+        // B-5: un ingreso con tarjeta de credito seria una amortizacion (C-7).
+        if (card.getType() == CardType.CREDIT) {
+            throw new BusinessException(ErrorCode.OPERATION_NOT_SUPPORTED_FOR_CARD_TYPE,
+                    "Deposits are not supported for credit cards");
+        }
+        Account account = accountRepository.findById(card.getAccountId())
+                .orElseThrow(() -> new BusinessException(ErrorCode.ACCOUNT_NOT_FOUND, "Account not found"));
+        Atm atm = atmRepository.findById(session.atmId())
+                .orElseThrow(() -> new BusinessException(ErrorCode.ATM_NOT_FOUND, "ATM not found"));
+        if (!atm.getBankId().equals(account.getBankId())) {
+            throw new BusinessException(ErrorCode.FOREIGN_ATM_DEPOSIT_NOT_ALLOWED,
+                    "Deposits are only allowed at ATMs of the account's bank");
+        }
+
+        account.credit(amount);
+        UUID operationId = UUID.randomUUID();
+        movementRepository.save(new Movement(UUID.randomUUID(), account.getId(), card.getId(),
+                atm.getId(), operationId, MovementType.DEPOSIT, amount, true,
+                account.getBalance(), "Cash deposit", null));
+        return new Receipt(operationId, amount, BigDecimal.ZERO.setScale(2), account.getBalance());
+    }
+
     private Card requireCard(SessionContext session) {
         return cardRepository.findById(session.cardId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.CARD_NOT_FOUND, "Card not found"));
